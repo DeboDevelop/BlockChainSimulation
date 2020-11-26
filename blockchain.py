@@ -23,7 +23,17 @@ class Network:
     def __init__(self):
         self.blockchain = [
             [
-                { "transaction_id": str(uuid.uuid4()), },
+                { "transaction_id": str(uuid.uuid4()),
+                  "prev_transaction_ids" : [],
+                  "sender_id" : "",
+                  "receiver_id" : "",
+                  "created_by" : "Network",
+                  "created_at" : datetime.datetime.now(),
+                  "coins" : 0,
+                  "transaction_fee" : 0,
+                  "incentive" : 0,
+                  "payment_received" : True,
+                },
             ],
         ]
         self.nodes = []
@@ -44,10 +54,10 @@ class Network:
                         self.blockchain.append([block])
                     #If it is a new branch coming from old block
                     else:
-                        self.blockchain[j].append(block)
+                        self.blockchain[j+1].append(block)
 
         for i in range(self.nodes):
-            if self.nodes[i]["id"] == block["created_by"]:
+            if self.nodes[i]["miner_id"] == block["created_by"]:
                 self.nodes[i].receive_incentive(block, self)
                 break
 
@@ -55,10 +65,25 @@ class Network:
         self.nodes.append(node)
 
     def verify_blockchain(self):
-        pass
+        current = 1
+        while(current < len(self.blockchain)):
+            prev = self.blockchain[current-1]
+            curr = self.blockchain[current]
+            l = len(prev) if len(prev) < len(curr) else len(curr)
+            i = 0
+            while (i<l):
+                if(prev[i]["transaction_id"] != curr[i]["prev_transaction_ids"][-1]):
+                    print("Blockchain not valid")
+                    return
+                i+=1
+            current+=1
+        print("Blockchain Valid")
 
     def print_blockchain(self):
-        pass
+        for block in self.blockchain:
+            print(" ")
+            print(block)
+            print(" ")
 
 """
 block_schema = {
