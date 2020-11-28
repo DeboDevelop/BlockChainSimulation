@@ -17,13 +17,63 @@ block_schema = {
 }
 """
 
+class BlockChain:
+    data = {}
+    children = []
+    parent = None
+
+    def __init__(self, data, parent):
+        self.data = data
+        self.children = []
+        self.parent = parent
+
+    def add_block(self, block):
+        prev_blocks = block["prev_transaction_ids"]
+        i = 0
+        root = self
+        while(i<len(prev_blocks)):
+            if(root.data["transaction_id"]!=prev_blocks[i]):
+                print("Block cannot be added")
+            i+=1
+            flag=False
+            for block in root.children:
+                if (block.data["transaction_id"]==prev_blocks[i]):
+                    flag=True
+                    root=block
+            if(flag == False):
+                print("Block cannot be added")
+                break
+            if(block.data["transaction_id"] == prev_blocks[-1]):
+                root.children.append(BlockChain(block, root))
+                print("Block Added")
+                break
+
+    def verify_blockchain(self, root):
+        if(root.children == []):
+            return 1;
+        for block in root.children:
+            if root != block.parent:
+                print("Verification Failed!!!")
+                print("BlockChain has been tampared!!!")
+                return -1;
+
+        for block in root.children:
+            exit_code = self.verify_blockchain(self, block)
+            if(exit_code == -1):
+                return -1;
+        return 1;
+
+    def lastest_block(self):
+        root = self
+        while(True):
+            if(root.children==[]):
+                return root;
+            root = root.children[0]
+
+
 class Network:
-    blockchain = []
-    nodes = []
     def __init__(self):
-        self.blockchain = [
-            [
-                { "transaction_id": str(uuid.uuid4()),
+        data = { "transaction_id": str(uuid.uuid4()),
                   "prev_transaction_ids" : [],
                   "sender_id" : "",
                   "receiver_id" : "",
@@ -33,28 +83,12 @@ class Network:
                   "transaction_fee" : 0,
                   "incentive" : 0,
                   "payment_received" : True,
-                },
-            ],
-        ]
+                }
+        self.blockchain = BlockChain(data, None)
         self.nodes = []
 
     def add_block(self, block):
-        # Checking if the block exist in the blockchain or not.
-        for block_list in self.blockchain:
-            for existing_block in block_list:
-                if existing_block["transaction_id"] == block["transaction_id"]:
-                    return
-
-        # Finding the Right place to push the block
-        for j in range(len(self.blockchain)):
-            for i in range(len(self.blockchain[j])):
-                if block_list[i]["transaction_id"] == block["prev_transaction_ids"][-1]:
-                    #If it is a new block
-                    if(i == (len(block_list)-1)):
-                        self.blockchain.append([block])
-                    #If it is a new branch coming from old block
-                    else:
-                        self.blockchain[j+1].append(block)
+        self.blockchain.add_block(block)
 
         for i in range(self.nodes):
             if self.nodes[i]["miner_id"] == block["created_by"]:
@@ -65,26 +99,14 @@ class Network:
         self.nodes.append(node)
 
     def verify_blockchain(self):
-        #Need to recheck 
-        current = 1
-        while(current < len(self.blockchain)):
-            prev = self.blockchain[current-1]
-            curr = self.blockchain[current]
-            l = len(prev) if len(prev) < len(curr) else len(curr)
-            i = 0
-            while (i<l):
-                if(prev[i]["transaction_id"] != curr[i]["prev_transaction_ids"][-1]):
-                    print("Blockchain not valid")
-                    return
-                i+=1
-            current+=1
-        print("Blockchain Valid")
+        if(self.blockchain.verify_blockchain(self.blockchain) == 1):
+            print("Blockchain Valid")
+        else:
+            print("Blockchain invalid")
 
     def print_blockchain(self):
-        for block in self.blockchain:
-            print(" ")
-            print(block)
-            print(" ")
+        #DFS/BFS needs to be inplemented
+        pass
 
 """
 #Block in mempool
@@ -101,13 +123,6 @@ block_schema = {
 """
 
 class Miner:
-    miner_id = ""
-    blockchain = []
-    nodes = []
-    mempool = []
-    wallet = 0
-    computation_power = 0
-
     def __init__(self, network, coins, comp_power):
         self.miner_id = str(uuid.uuid4())
         self.blockchain = network.blockchain
@@ -125,8 +140,9 @@ class Miner:
             print("Not enough money in the wallet")
             return
         wallet-=coins
-        prev_transaction_ids = self.blockchain[-1][0]["prev_transaction_ids"]
-        prev_transaction_ids.append(self.blockchain[-1][0]["transaction_id"])
+        lastest_block = self.blockchain.lastest_block();
+        prev_transaction_ids = lastest_block.data["prev_transaction_ids"]
+        prev_transaction_ids.append(lastest_block.data["transaction_id"])
         random.seed(coins)
         block = {
             "transaction_id" : str(uuid.uuid4()),
@@ -174,16 +190,6 @@ class Miner:
             self.nodes[i].receive_block(block)
 
     def receive_block(self, block):
-        # Finding the Right place to push the block
-        for j in range(len(self.blockchain)):
-            for i in range(len(self.blockchain[j])):
-                if block_list[i]["transaction_id"] == block["prev_transaction_ids"][-1]:
-                    #If it is a new block
-                    if(i == (len(block_list)-1)):
-                        self.blockchain.append([block])
-                    #If it is a new branch coming from old block
-                    else:
-                        self.blockchain[j+1].append(block)
         self.receive_coins(block)
 
     def request_blockchain(self):
