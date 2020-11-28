@@ -13,7 +13,6 @@ block_schema = {
     "coins" : amount_contained, #Will be give to receiver
     "transaction_fee" : transaction_fee, #Will be given to miner
     "incentive" : coins_generated_by_network, #Will be given to miner
-    "payment_received" : boolean_value, #The receiver received the payment or not
 }
 """
 
@@ -31,9 +30,10 @@ class BlockChain:
         prev_blocks = block["prev_transaction_ids"]
         i = 0
         root = self
+        if(root.data["transaction_id"]!=prev_blocks[i]):
+            print("Block cannot be added")
+            return -1
         while(i<len(prev_blocks)):
-            if(root.data["transaction_id"]!=prev_blocks[i]):
-                print("Block cannot be added")
             i+=1
             flag=False
             for block in root.children:
@@ -42,11 +42,11 @@ class BlockChain:
                     root=block
             if(flag == False):
                 print("Block cannot be added")
-                break
+                return -1
             if(block.data["transaction_id"] == prev_blocks[-1]):
                 root.children.append(BlockChain(block, root))
                 print("Block Added")
-                break
+                return 0
 
     def verify_blockchain(self, root):
         if(root.children == []):
@@ -70,6 +70,15 @@ class BlockChain:
                 return root;
             root = root.children[0]
 
+    def block_list(self):
+        root = self
+        list_of_block = []
+        while(True):
+            list_of_block.append(root.data)
+            if(root.children==[]):
+                break
+            root = root.children[0]
+        return list_of_block
 
 class Network:
     def __init__(self):
@@ -82,18 +91,12 @@ class Network:
                   "coins" : 0,
                   "transaction_fee" : 0,
                   "incentive" : 0,
-                  "payment_received" : True,
                 }
         self.blockchain = BlockChain(data, None)
         self.nodes = []
 
     def add_block(self, block):
-        self.blockchain.add_block(block)
-
-        for i in range(self.nodes):
-            if self.nodes[i]["miner_id"] == block["created_by"]:
-                self.nodes[i].receive_incentive(block, self)
-                break
+        return self.blockchain.add_block(block)
 
     def add_node(self, node):
         self.nodes.append(node)
@@ -125,7 +128,8 @@ block_schema = {
 class Miner:
     def __init__(self, network, coins, comp_power):
         self.miner_id = str(uuid.uuid4())
-        self.blockchain = network.blockchain
+        lastest_block = network.blockchain.lastest_block()
+        self.blockchain = BlockChain(lastest_block.data, None)
         self.nodes = network.nodes
         self.mempool = []
         self.wallet = coins
@@ -177,9 +181,10 @@ class Miner:
             "coins" : block["coins"], 
             "transaction_fee" : block["transaction_fee"], 
             "incentive" : block["incentive"],
-            "payment_received" : False, 
         }
         network.add_block(new_block)
+        self.blockchain.add_block(new_block)
+        self.receive_incentive(new_block)
 
     def receive_incentive(self, block):
         wallet += block["transaction_fee"] + block["incentive"]
@@ -190,24 +195,18 @@ class Miner:
             self.nodes[i].receive_block(block)
 
     def receive_block(self, block):
+        self.blockchain.add_block(block)
         self.receive_coins(block)
 
     def request_blockchain(self):
         #Requesting all other peers for their blockchain
-        max = 0
-        blockchain_list = 0
-        for node in self.nodes:
-            if max < len(node.blockchain):
-                max = len(node.blockchain)
-                blockchain_list = node.blockchain
-        self.blockchain = blockchain_list
+        # Needs to be rewritten
+        pass
 
     def receive_coins(self, block):
         #Unloading coins from the newly created block.
         if block["receiver_id"] == self.miner_id:
-            if block["payment_received"] == False:
-                wallet += block["coins"]
-                block["payment_received"] == True
+            wallet += block["coins"]
 
     def work(self, network):
         random.seed(10)
