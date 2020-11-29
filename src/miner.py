@@ -21,7 +21,7 @@ block_schema = {
 class Miner:
     def __init__(self, network, coins, comp_power):
         self.miner_id = str(uuid.uuid4())
-        lastest_block = network.blockchain.lastest_block()
+        lastest_block = network.blockchain.latest_block()
         self.blockchain = BlockChain(lastest_block.data, None)
         self.nodes = network.nodes
         self.mempool = []
@@ -37,7 +37,7 @@ class Miner:
             print("Not enough money in the wallet")
             return
         wallet-=coins
-        lastest_block = self.blockchain.lastest_block();
+        lastest_block = self.blockchain.latest_block();
         prev_transaction_ids = lastest_block.data["prev_transaction_ids"]
         prev_transaction_ids.append(lastest_block.data["transaction_id"])
         random.seed(coins)

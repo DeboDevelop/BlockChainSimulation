@@ -1,6 +1,7 @@
 import uuid
 import random
 import datetime
+import copy
 
 """
 block_schema = {
@@ -27,27 +28,22 @@ class BlockChain:
         self.parent = parent
 
     def add_block(self, block):
-        prev_blocks = block["prev_transaction_ids"]
-        i = 0
-        root = self
-        if(root.data["transaction_id"]!=prev_blocks[i]):
-            print("Block cannot be added")
-            return -1
-        while(i<len(prev_blocks)):
-            i+=1
-            flag=False
-            for block in root.children:
-                if (block.data["transaction_id"]==prev_blocks[i]):
-                    flag=True
-                    root=block
-            if(flag == False):
-                print("Block cannot be added")
-                return -1
-            if(block.data["transaction_id"] == prev_blocks[-1]):
+        if block["prev_transaction_ids"] == []:
+            print("Block Rejected")
+            return -1;
+        i = 1
+        root = copy.copy(self)
+        while True:
+            if ((root.children == []) or (root.data["transaction_id"] == block["prev_transaction_ids"][-1])):
                 root.children.append(BlockChain(block, root))
                 print("Block Added")
                 return 0
-
+            for block in root.children:
+                if(block.data["transaction_id"]==block["prev_transaction_ids"][i]):
+                    i+=1
+                    root = copy.copy(block)
+                    break
+                    
     def verify_blockchain(self, root):
         if(root.children == []):
             return 1;
@@ -63,7 +59,7 @@ class BlockChain:
                 return -1;
         return 1;
 
-    def lastest_block(self):
+    def latest_block(self):
         root = self
         while(True):
             if(root.children==[]):
