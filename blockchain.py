@@ -80,6 +80,22 @@ class BlockChain:
             root = root.children[0]
         return list_of_block
 
+    def print_blockchain(self):
+        root = self
+        if(root == None):
+            return
+        queue = [root]
+        while (len(queue)>0):
+            n = len(queue)
+            while n>0:
+                p = queue.pop(0)
+                print(p.data)
+                for child in p.children:
+                    queue.append(child)
+                n-=1
+            print("--------------------------------------")
+
+
 class Network:
     def __init__(self):
         data = { "transaction_id": str(uuid.uuid4()),
@@ -107,9 +123,6 @@ class Network:
         else:
             print("Blockchain invalid")
 
-    def print_blockchain(self):
-        #DFS/BFS needs to be inplemented
-        pass
 
 """
 #Block in mempool
