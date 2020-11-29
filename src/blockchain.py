@@ -38,23 +38,23 @@ class BlockChain:
                 root.children.append(BlockChain(block, root))
                 print("Block Added")
                 return 0
-            for block in root.children:
-                if(block.data["transaction_id"]==block["prev_transaction_ids"][i]):
+            for child in root.children:
+                if(child.data["transaction_id"]==block["prev_transaction_ids"][i]):
                     i+=1
-                    root = copy.copy(block)
+                    root = copy.copy(child)
                     break
                     
     def verify_blockchain(self, root):
         if(root.children == []):
             return 1;
         for block in root.children:
-            if root != block.parent:
+            if (root.data != block.parent.data):
                 print("Verification Failed!!!")
                 print("BlockChain has been tampared!!!")
                 return -1;
 
         for block in root.children:
-            exit_code = self.verify_blockchain(self, block)
+            exit_code = self.verify_blockchain(block)
             if(exit_code == -1):
                 return -1;
         return 1;
@@ -76,16 +76,23 @@ class BlockChain:
             root = root.children[0]
         return list_of_block
 
+    def print_block(self, block):
+        print("______________________________________")
+        for key in block:
+            print(key," --> ",block[key])
+        print("______________________________________")
+
     def print_blockchain(self):
         root = self
         if(root == None):
             return
+        print("--------------------------------------")
         queue = [root]
         while (len(queue)>0):
             n = len(queue)
             while n>0:
                 p = queue.pop(0)
-                print(p.data)
+                self.print_block(p.data)
                 for child in p.children:
                     queue.append(child)
                 n-=1
