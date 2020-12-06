@@ -28,7 +28,7 @@ class BlockChain:
         self.parent = parent
 
     def add_block(self, block):
-        if block["prev_transaction_ids"] == []:
+        if block["prev_transaction_ids"] == ():
             print("Block Rejected")
             return -1;
         i = 1

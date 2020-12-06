@@ -20,7 +20,7 @@ block_schema = {
 class Network:
     def __init__(self):
         data = { "transaction_id": str(uuid.uuid4()),
-                  "prev_transaction_ids" : [],
+                  "prev_transaction_ids" : (),
                   "sender_id" : "",
                   "receiver_id" : "",
                   "created_by" : "Network",
@@ -36,7 +36,8 @@ class Network:
         return self.blockchain.add_block(block)
 
     def add_node(self, node):
-        self.nodes.append(node)
+        if(str(type(node))=="<class 'miner.Miner'>"):
+            self.nodes.append(node)
 
     def verify_blockchain(self):
         if(self.blockchain.verify_blockchain(self.blockchain) == 1):
