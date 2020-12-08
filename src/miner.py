@@ -29,7 +29,8 @@ class Miner:
         self.computation_power = comp_power
 
     def add_node(self, node):
-        self.nodes.append(node)
+        if(str(type(node))=="<class 'miner.Miner'>"):
+            self.nodes.append(node)
 
     def create_transaction(self, coins, receiver, transaction_fee):
         #Creating a new Transactions
@@ -39,7 +40,7 @@ class Miner:
         wallet-=coins
         lastest_block = self.blockchain.latest_block();
         prev_transaction_ids = lastest_block.data["prev_transaction_ids"]
-        prev_transaction_ids.append(lastest_block.data["transaction_id"])
+        prev_transaction_ids += (lastest_block.data["transaction_id"],)
         random.seed(coins)
         block = {
             "transaction_id" : str(uuid.uuid4()),
@@ -91,11 +92,6 @@ class Miner:
         self.blockchain.add_block(block)
         self.receive_coins(block)
 
-    def request_blockchain(self):
-        #Requesting all other peers for their blockchain
-        # Needs to be rewritten
-        pass
-
     def receive_coins(self, block):
         #Unloading coins from the newly created block.
         if block["receiver_id"] == self.miner_id:
@@ -110,3 +106,17 @@ class Miner:
             self.add_block_to_network(block, network)
         else:
             mempool[select][work_needed] -= self.computation_power
+
+    def request_blockchain(self):
+        #Requesting all other peers for their blockchain
+        max_size = self.blockchain.size
+        max_blockchain = self.blockchain
+        for i in range(self.nodes):
+            blck = self.nodes[i].sent_blockchain()
+            if(blck.size > max_size):
+                max_size = blck.size
+                max_blockchain = blck
+        self.blockchain = max_blockchain
+
+    def sent_blockchain(self):
+        return self.blockchain

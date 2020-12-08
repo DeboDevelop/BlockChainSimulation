@@ -18,14 +18,11 @@ block_schema = {
 """
 
 class BlockChain:
-    data = {}
-    children = []
-    parent = None
-
     def __init__(self, data, parent):
         self.data = data
         self.children = []
         self.parent = parent
+        self.size = 1
 
     def add_block(self, block):
         if block["prev_transaction_ids"] == ():
@@ -37,6 +34,7 @@ class BlockChain:
             if ((root.children == []) or (root.data["transaction_id"] == block["prev_transaction_ids"][-1])):
                 root.children.append(BlockChain(block, root))
                 print("Block Added")
+                self.size+=1
                 return 0
             for child in root.children:
                 if(child.data["transaction_id"]==block["prev_transaction_ids"][i]):
