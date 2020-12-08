@@ -30,14 +30,14 @@ class Network:
                   "incentive" : 0,
                 }
         self.blockchain = BlockChain(data, None)
-        self.nodes = []
+        self.nodes = ()
 
     def add_block(self, block):
         return self.blockchain.add_block(block)
 
     def add_node(self, node):
         if(str(type(node))=="<class 'miner.Miner'>"):
-            self.nodes.append(node)
+            self.nodes = self.nodes + (node,)
 
     def verify_blockchain(self):
         if(self.blockchain.verify_blockchain(self.blockchain) == 1):

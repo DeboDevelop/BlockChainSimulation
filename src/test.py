@@ -144,3 +144,170 @@ class MyNetworkTest(unittest.TestCase):
         length = len(nn.nodes)
         nn.add_node(125)
         self.assertEqual(len(nn.nodes), length)
+
+netwrk = Network()
+miner1 = Miner(netwrk, 1000, 24)
+miner2 = Miner(netwrk, 1200, 12)
+
+class MyMinerTest(unittest.TestCase):
+    def test_01_add_node_success(self):
+        length = len(miner1.nodes)
+        miner1.add_node(miner2)
+        self.assertEqual(len(miner1.nodes), length+1)
+
+    def test_02_add_node_success(self):
+        length = len(miner2.nodes)
+        miner2.add_node(miner1)
+        self.assertEqual(len(miner2.nodes), length+1)
+
+    def test_03_add_node_failure(self):
+        length = len(miner1.nodes)
+        miner1.add_node(125)
+        self.assertEqual(len(miner1.nodes), length)
+
+    def test_04_receive_transaction(self):
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : (),
+                "sender_id" : "",
+                "receiver_id" : "",
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : int(random.random()*100), 
+                "work_needed" : int(random.random()*100) 
+               }
+        length = len(miner1.mempool)
+        miner1.receive_transaction(data)
+        self.assertEqual(len(miner1.mempool), length+1)
+
+    def test_05_request_block(self):
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : (),
+                "sender_id" : "",
+                "receiver_id" : "",
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : int(random.random()*100), 
+                "work_needed" : int(random.random()*100) 
+               }
+        length = len(miner1.nodes[0].mempool)
+        miner1.request_block(data)
+        self.assertEqual(len(miner1.nodes[0].mempool), length+1)
+
+    def test_06_create_transaction_failed(self):
+        self.assertEqual(miner1.create_transaction(100000, miner2, 100), -1)
+    
+    def test_07_create_transaction_success(self):
+        self.assertEqual(miner1.create_transaction(100, miner2, 10), 1)
+
+    def test_08_receive_coins(self):
+        wallet = miner1.wallet
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : (),
+                "sender_id" : "",
+                "receiver_id" : miner1.miner_id,
+                "created_by" : miner1.miner_id,
+                "created_at" : datetime.datetime.now(),
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : 0,
+               }
+        miner1.receive_coins(data)
+        self.assertEqual(miner1.wallet, wallet+data["coins"])
+
+    def test_09_receive_block(self):
+        wallet = miner1.wallet
+        latest_block = miner1.blockchain.latest_block().data
+        prev_transaction_ids = latest_block["prev_transaction_ids"] + (latest_block["transaction_id"],)
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : prev_transaction_ids,
+                "sender_id" : "",
+                "receiver_id" : miner1.miner_id,
+                "created_by" : miner1.miner_id,
+                "created_at" : datetime.datetime.now(),
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : 0,
+               }
+        miner1.receive_block(data)
+        self.assertEqual(miner1.wallet, wallet+data["coins"])
+
+    def test_10_broadcast(self):
+        size = miner1.nodes[0].blockchain.size
+        latest_block = miner1.nodes[0].blockchain.latest_block().data
+        prev_transaction_ids = latest_block["prev_transaction_ids"] + (latest_block["transaction_id"],)
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : prev_transaction_ids,
+                "sender_id" : "",
+                "receiver_id" : miner1.miner_id,
+                "created_by" : miner1.miner_id,
+                "created_at" : datetime.datetime.now(),
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : 0,
+               }
+        miner1.broadcast(data)
+        self.assertEqual(miner1.nodes[0].blockchain.size, size+1)
+
+    def test_11_receive_incentive(self):
+        wallet = miner1.wallet
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : (),
+                "sender_id" : "",
+                "receiver_id" : miner1.miner_id,
+                "created_by" : miner1.miner_id,
+                "created_at" : datetime.datetime.now(),
+                "coins" : 0,
+                "transaction_fee" : 20,
+                "incentive" : 10,
+               }
+        miner1.receive_incentive(data)
+        self.assertEqual(miner1.wallet, wallet+data["transaction_fee"]+data["incentive"])
+
+    def test_12_add_block_to_network(self):
+        latest_block = netwrk.blockchain.latest_block().data
+        prev_transaction_ids = latest_block["prev_transaction_ids"] + (latest_block["transaction_id"],)
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : prev_transaction_ids,
+                "sender_id" : "",
+                "receiver_id" : miner1.miner_id,
+                "created_by" : miner1.miner_id,
+                "created_at" : datetime.datetime.now(),
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : 0,
+               }
+        size = netwrk.blockchain.size
+        miner1.add_block_to_network(data, netwrk)
+        self.assertEqual(netwrk.blockchain.size, size+1)
+
+    def test_13_sent_blockchain(self):
+        self.assertEqual(miner1.sent_blockchain(), miner1.blockchain)
+
+    def test_14_request_blockchain(self):
+        blch = miner2.blockchain
+        miner2.request_blockchain()
+        self.assertEqual(miner2.blockchain, blch)
+
+    def test_15_work(self):
+        data = {
+                "transaction_id" : str(uuid.uuid4()),
+                "prev_transaction_ids" : (),
+                "sender_id" : "",
+                "receiver_id" : "",
+                "coins" : 100,
+                "transaction_fee" : 20,
+                "incentive" : int(random.random()*100), 
+                "work_needed" : 50 
+               }
+        work_needed = data["work_needed"]
+        miner2.mempool = (data,)
+        miner2.work(netwrk)
+        self.assertEqual(miner2.mempool[0]["work_needed"], work_needed - miner2.computation_power)
+        

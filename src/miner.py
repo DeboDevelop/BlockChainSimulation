@@ -24,20 +24,20 @@ class Miner:
         lastest_block = network.blockchain.latest_block()
         self.blockchain = BlockChain(lastest_block.data, None)
         self.nodes = network.nodes
-        self.mempool = []
+        self.mempool = ()
         self.wallet = coins
         self.computation_power = comp_power
 
     def add_node(self, node):
         if(str(type(node))=="<class 'miner.Miner'>"):
-            self.nodes.append(node)
+            self.nodes = self.nodes + (node,)
 
     def create_transaction(self, coins, receiver, transaction_fee):
         #Creating a new Transactions
-        if(wallet < coins):
+        if(self.wallet < coins):
             print("Not enough money in the wallet")
-            return
-        wallet-=coins
+            return -1
+        self.wallet-=coins
         lastest_block = self.blockchain.latest_block();
         prev_transaction_ids = lastest_block.data["prev_transaction_ids"]
         prev_transaction_ids += (lastest_block.data["transaction_id"],)
@@ -52,17 +52,18 @@ class Miner:
             "incentive" : int(random.random()*100), 
             "work_needed" : int(random.random()*100) 
         }
-        self.mempool.append(block)
+        self.mempool+=(block,)
         self.request_block(block)
+        return 1
 
     def request_block(self, block):
         #Request all other nodes to create this block
-        for i in range(self.nodes):
+        for i in range(len(self.nodes)):
             self.nodes[i].receive_transaction(block)
 
     def receive_transaction(self, block):
         #All other nodes receiving this block and added it in their mempool
-        self.mempool.append(block)
+        self.mempool+=(block,)
 
     def add_block_to_network(self, block, network):
         new_block =  {
@@ -81,37 +82,40 @@ class Miner:
         self.receive_incentive(new_block)
 
     def receive_incentive(self, block):
-        wallet += block["transaction_fee"] + block["incentive"]
-        broadcast(block)
+        self.wallet += block["transaction_fee"] + block["incentive"]
+        self.broadcast(block)
         
     def broadcast(self, block):
-        for i in range(self.nodes):
+        for i in range(len(self.nodes)):
             self.nodes[i].receive_block(block)
 
     def receive_block(self, block):
-        self.blockchain.add_block(block)
-        self.receive_coins(block)
+        x = self.blockchain.add_block(block)
+        if x==0:
+            self.receive_coins(block)
+        else:
+            print(self.miner_id," failed to add block")
 
     def receive_coins(self, block):
         #Unloading coins from the newly created block.
         if block["receiver_id"] == self.miner_id:
-            wallet += block["coins"]
+            self.wallet += block["coins"]
 
     def work(self, network):
         random.seed(10)
-        select = (random.random()*100)%(len(self.mempool))
-        if(mempool[select][work_needed] < self.computation_power):
-            mempool[select][work_needed] = 0
-            block = mempool.pop(select)
+        select = (int(random.random()*100))%(len(self.mempool))
+        if(self.mempool[select]["work_needed"] < self.computation_power):
+            self.mempool[select]["work_needed"] = 0
+            block = self.mempool.pop(select)
             self.add_block_to_network(block, network)
         else:
-            mempool[select][work_needed] -= self.computation_power
+            self.mempool[select]["work_needed"] -= self.computation_power
 
     def request_blockchain(self):
         #Requesting all other peers for their blockchain
         max_size = self.blockchain.size
         max_blockchain = self.blockchain
-        for i in range(self.nodes):
+        for i in range(len(self.nodes)):
             blck = self.nodes[i].sent_blockchain()
             if(blck.size > max_size):
                 max_size = blck.size
