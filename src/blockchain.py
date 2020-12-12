@@ -33,7 +33,7 @@ class BlockChain:
         while True:
             if ((root.children == []) or (root.data["transaction_id"] == block["prev_transaction_ids"][-1])):
                 root.children.append(BlockChain(block, root))
-                print("Block Added")
+                print("Block Added. Block created by", block["created_by"])
                 self.size+=1
                 return 0
             for child in root.children:

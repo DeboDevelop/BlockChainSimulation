@@ -33,11 +33,13 @@ class Network:
         self.nodes = ()
 
     def add_block(self, block):
+        print("Trying to Add new Block...")
         return self.blockchain.add_block(block)
 
     def add_node(self, node):
         if(str(type(node))=="<class 'miner.Miner'>"):
             self.nodes = self.nodes + (node,)
+            print("Node added by Network: ",self)
 
     def verify_blockchain(self):
         if(self.blockchain.verify_blockchain(self.blockchain) == 1):
