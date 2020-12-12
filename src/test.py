@@ -2,6 +2,8 @@ import unittest
 import uuid
 import random
 import datetime
+from io import StringIO 
+from unittest.mock import patch 
 from blockchain import BlockChain
 from network import Network
 from miner import Miner
@@ -18,6 +20,31 @@ data = { "transaction_id": 1,
        }
 
 bc = BlockChain(data, None)
+
+def mock_print_blockchain(root):
+        expected_output = ""
+        if(root == None):
+            return
+        expected_output+="--------------------------------------\n"
+        queue = [root]
+        while (len(queue)>0):
+            n = len(queue)
+            while n>0:
+                p = queue.pop(0)
+                expected_output = mock_print_block(expected_output, p.data)
+                for child in p.children:
+                    queue.append(child)
+                n-=1
+            expected_output+="--------------------------------------\n"
+
+        return expected_output
+
+def mock_print_block(expected_output, block):
+        expected_output+="______________________________________\n"
+        for key in block:
+            expected_output+= str(key)+"  -->  "+str(block[key])+"\n"
+        expected_output+="______________________________________\n"
+        return expected_output
 
 class MyBlockChainTest(unittest.TestCase):
 
@@ -92,10 +119,18 @@ class MyBlockChainTest(unittest.TestCase):
         self.assertEqual(bc.verify_blockchain(bc), 1)
 
     def test_8_print_block(self):
-        bc.print_block(data)
+        self.maxDiff = None
+        expected_output = ""
+        expected_output = mock_print_block(expected_output, data)
+        with patch('sys.stdout', new = StringIO()) as fake_out: 
+            bc.print_block(data)
+            self.assertEqual(fake_out.getvalue(), expected_output) 
 
     def test_9_print_blockchain(self):
-        bc.print_blockchain()
+        expected_output = mock_print_blockchain(bc)
+        with patch('sys.stdout', new = StringIO()) as fake_out: 
+            bc.print_blockchain()
+            self.assertEqual(fake_out.getvalue(), expected_output) 
 
 nn = Network()
 m1 = Miner(nn, 100, 12)
@@ -132,8 +167,11 @@ class MyNetworkTest(unittest.TestCase):
         self.assertEqual(bc.add_block(newData), -1)
 
     def test_3_verify_blockchain(self):
+        expected_output = "Blockchain Valid\n"
         nn.verify_blockchain()
-        pass
+        with patch('sys.stdout', new = StringIO()) as fake_out: 
+            nn.verify_blockchain()
+            self.assertEqual(fake_out.getvalue(), expected_output) 
 
     def test_4_add_node_success(self):
         length = len(nn.nodes)
