@@ -5,7 +5,7 @@ It provides 3 classes Blockchain, Network and Miner. You can instanciates these 
 
 [![Build Status](https://travis-ci.com/DeboDevelop/BlockChainSimulation.svg?branch=main)](https://travis-ci.com/DeboDevelop/BlockChainSimulation)
 
-# Warning - Do not deploy in production. It's not stable yet.
+## Warning - Do not deploy in production. It's not stable yet.
 
 ### Features
 - Minimum use of third party library.
@@ -52,6 +52,8 @@ Python 3.6 or above.
 
 ### Quick Start
 
+Read about Schedule package [Here](https://pypi.org/project/schedule/).
+
 ```
 from blockchain import BlockChain
 from network import Network
@@ -59,6 +61,11 @@ from miner import Miner
 import threading
 import time
 import schedule
+
+# Refer to schedule's documentation to understand this snippet of code.
+def run_threaded(job_func):
+    job_thread = threading.Thread(target=job_func)
+    job_thread.start()
 
 #Create a object of Network class.
 #It will contain the main blockchain or actual blockchain an each miner will maintain
